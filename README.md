@@ -193,7 +193,12 @@ display. The cases (in `tests/cases/`) check:
   order kept), from the layer, its group or an effect layer, and after
   saving and loading an XCF;
 - every precision in RGB and grayscale against a floating point result,
-  layers with offsets, layers with masks;
+  layers with offsets, layers with masks (also switched off), layers in
+  layer groups;
+- every blend mode, contour, gradient type, repeat and interpolation, and
+  every effect with its settings at the ends of their ranges;
+- the preview (without the dialog): built, and the image exactly as
+  before afterwards;
 - the refusals, the selection and context being left as they were;
 - a text layer, whose text is changed before Reapply (in a second GIMP
   that loads fonts: GIMP 3.2 can hang loading fonts, so a hang there is
