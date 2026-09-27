@@ -1,0 +1,4 @@
+# test output (profiles, logs, screenshots)
+tests/output/
+__pycache__/
+*.pyc
