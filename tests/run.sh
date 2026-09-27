@@ -4,11 +4,11 @@
 # GIMP without a window; then, if a headless Chrome and node are there,
 # the dialog and undo tests on a Broadway display (tests/gui/gui-test.sh).
 # GIMP runs isolated from your own folders (tests/isolate.sh, with
-# gimp-plugin-devtools/gimp-run.sh): HOME and the XDG folders inside its
+# gimp-devtools/gimp-run.sh): HOME and the XDG folders inside its
 # Flatpak point into tests/output/gimp-home, so your GIMP profile,
 # plug-ins and ~/.var/app/org.gimp.GIMP are not used or changed. Before
 # and after, it lists your folders of GIMP and the other apps
-# (gimp-plugin-devtools/snapshot.sh) and fails if anything there changed.
+# (gimp-devtools/snapshot.sh) and fails if anything there changed.
 #
 #   tests/run.sh                 all tests
 #   LFX_ONLY=stroke tests/run.sh   only the GIMP cases whose names match

@@ -207,7 +207,7 @@ display. The cases (in `tests/cases/`) check:
 
 When a headless Chrome (or Chromium) and node 22 are there, `run.sh` also
 runs `tests/gui/gui-test.sh`: GIMP on a Broadway display, driven through
-[gimp-plugin-devtools](https://github.com/sandbranch/gimp-plugin-devtools)'
+[gimp-devtools](https://github.com/sandbranch/gimp-devtools)'
 `gui/cdp.mjs` (expected next to this folder, or in
 `$GIMP_PLUGIN_DEVTOOLS`). It opens the Drop Shadow dialog, turns Preview
 on and presses OK (one shadow is made) or Cancel (the preview is

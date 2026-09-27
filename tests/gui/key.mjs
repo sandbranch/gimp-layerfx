@@ -1,6 +1,6 @@
 // Presses a key with Control held, in the page of the headless Chrome on
 // 127.0.0.1:$CDP_PORT (Broadway turns the modifiers of key events into
-// GDK's): node key.mjs z   presses Ctrl+Z. gimp-plugin-devtools'
+// GDK's): node key.mjs z   presses Ctrl+Z. gimp-devtools'
 // cdp.mjs has no modifier keys.
 //
 // Copyright 2026 David

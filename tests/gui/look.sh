@@ -7,7 +7,7 @@
 #   tests/gui/look.sh <effect> [step...]
 #   tests/gui/look.sh stroke click:30,40 wait:1000
 #
-# The steps are those of gimp-plugin-devtools/gui/cdp.mjs, with click,
+# The steps are those of gimp-devtools/gui/cdp.mjs, with click,
 # down, move and up at positions from the dialog's top left corner.
 #
 # Copyright 2026 David
