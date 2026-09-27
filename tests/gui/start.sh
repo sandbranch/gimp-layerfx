@@ -5,7 +5,8 @@
 # LFX_GUI_EFFECT), in the throwaway profile of tests/run.sh, which
 # installs the plug-in there. broadwayd stops when GIMP quits, also when
 # GIMP fails. GIMP loads no fonts (--no-fonts): on Broadway it often hung
-# at start while loading them.
+# at start while loading them. GIMP runs isolated from your own folders
+# (tests/isolate.sh), with the throwaway home of tests/run.sh.
 #
 #   LFX_GUI_MODE=dialog LFX_GUI_EFFECT=bevel-emboss tests/gui/start.sh
 #
@@ -34,13 +35,16 @@ grep -q show-welcome-dialog "$profile/gimprc" 2>/dev/null ||
 # the windows where GIMP puts them by default (gui-test.sh clicks there),
 # not where they were when GIMP last quit
 rm -f "$profile/sessionrc"
-exec flatpak run --no-documents-portal --filesystem="$src" \
+GIMP_RUN_HOME=${GIMP_RUN_HOME:-$tests/output/gimp-home}
+# shellcheck source=SCRIPTDIR/../isolate.sh
+. "$tests/isolate.sh"
+gimp_run --flatpak --filesystem="$src" \
   --env=GDK_BACKEND=broadway --env=BROADWAY_DISPLAY=:$display \
   --env=GIMP3_DIRECTORY="$tests/output/profile" --env=LFX_OUT="$out" \
   --env=LFX_GUI_MODE="${LFX_GUI_MODE:-dialog}" \
   --env=LFX_GUI_EFFECT="${LFX_GUI_EFFECT:-drop-shadow}" \
   --env=LFX_GUI_EXISTING="${LFX_GUI_EXISTING:-0}" \
-  --command=sh org.gimp.GIMP -c \
+  -- sh -c \
   "broadwayd --port $port :$display & bw=\$!; trap 'kill \$bw' EXIT; \
    i=0; while [ ! -f '$out/page-open' ] && [ \$i -lt 300 ]; do sleep 0.2; i=\$((i+1)); done; \
    gimp-3.2 --no-splash --no-fonts \

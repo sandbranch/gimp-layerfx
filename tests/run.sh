@@ -3,7 +3,12 @@
 # in tests/output (GIMP3_DIRECTORY) and runs tests/gimp-test.py inside
 # GIMP without a window; then, if a headless Chrome and node are there,
 # the dialog and undo tests on a Broadway display (tests/gui/gui-test.sh).
-# Your own GIMP profile and plug-ins are not used or changed.
+# GIMP runs isolated from your own folders (tests/isolate.sh, with
+# gimp-plugin-devtools/gimp-run.sh): HOME and the XDG folders inside its
+# Flatpak point into tests/output/gimp-home, so your GIMP profile,
+# plug-ins and ~/.var/app/org.gimp.GIMP are not used or changed. Before
+# and after, it lists your folders of GIMP and the other apps
+# (gimp-plugin-devtools/snapshot.sh) and fails if anything there changed.
 #
 #   tests/run.sh                 all tests
 #   LFX_ONLY=stroke tests/run.sh   only the GIMP cases whose names match
@@ -22,6 +27,13 @@ out=$here/output
 profile=$out/profile
 log=$out/test.log
 status=0
+
+GIMP_RUN_HOME=$out/gimp-home
+export GIMP_RUN_HOME
+# shellcheck source=SCRIPTDIR/isolate.sh
+. "$here/isolate.sh"
+mkdir -p "$out"
+snapshot_take "$out/snapshot-before.txt"
 
 rm -rf "$profile"
 mkdir -p "$profile/plug-ins/layerfx"
@@ -43,19 +55,16 @@ run_gimp () {
     fonts=$1
     script=$2
     if [ "$GIMP_FLATPAK" = 1 ]; then
-        timeout 1800 flatpak run --no-documents-portal --filesystem="$src" \
-          --env=GIMP3_DIRECTORY="$profile" --env=LFX_ONLY="$LFX_ONLY" \
-          --env=LFX_SRC="$src" --env=LFX_OUT="$out" \
-          --command=gimp-console-3.2 org.gimp.GIMP \
-          --no-interface ${fonts:+"$fonts"} --batch-interpreter python-fu-eval \
-          -b "exec(open('$script').read())" --quit
+        console=gimp-console-3.2
     else
         console=$(command -v gimp-console-3.2 || command -v gimp-console)
         [ -n "$console" ] || { echo "LFX FAIL: no gimp-console on the PATH"; return 1; }
-        GIMP3_DIRECTORY="$profile" LFX_ONLY="$LFX_ONLY" LFX_SRC="$src" LFX_OUT="$out" \
-          timeout 1800 "$console" --no-interface ${fonts:+"$fonts"} --batch-interpreter python-fu-eval \
-          -b "exec(open('$script').read())" --quit
     fi
+    gimp_run --timeout=1800 --filesystem="$src" \
+      --env=GIMP3_DIRECTORY="$profile" --env=LFX_ONLY="$LFX_ONLY" \
+      --env=LFX_SRC="$src" --env=LFX_OUT="$out" -- \
+      "$console" --no-interface ${fonts:+"$fonts"} --batch-interpreter python-fu-eval \
+      -b "exec(open('$script').read())" --quit
 }
 
 echo "== GIMP"
@@ -88,6 +97,9 @@ if [ "$LFX_GUI" != 0 ] && [ -z "$LFX_ONLY" ]; then
     echo "== GUI (Broadway)"
     "$here/gui/gui-test.sh" || status=1
 fi
+
+echo "== your folders of GIMP and the other apps"
+snapshot_check "$out/snapshot-before.txt" "LFX " || status=1
 
 [ $status = 0 ] && echo "LFX all passed" || echo "LFX FAILED (log: $log)"
 exit $status
