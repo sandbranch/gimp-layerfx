@@ -530,7 +530,7 @@ class Shape:
         alpha = g.op('gegl:component-extract', g.src(layer.get_buffer()),
                      component='alpha', linear=True)
         mask = layer.get_mask()
-        if mask is not None:
+        if mask is not None and layer.get_apply_mask():
             alpha = g.mul(alpha, g.src(mask.get_buffer()))
         self.alpha = g.render(g.translate(alpha, x, y), self.rect)
         g = Graph()
@@ -1692,14 +1692,15 @@ def merge_layers(image, source, layers, effect, s):
         layer.set_composite_mode(Gimp.LayerCompositeMode.UNION)
     inside = effect.inside(s)
     side = effect_side(effect.name, s)
+    rect = layer_rect(source)
+    mask = layer_mask_buffer(source)
+    mask_on = source.get_apply_mask() if mask is not None else False
     if inside:
-        # the effect stays inside the layer's shape: its alpha and mask
-        # are kept
-        rect = layer_rect(source)
+        # the effect stays inside the layer's shape: the layer keeps its
+        # alpha, and its mask
         g = Graph()
         alpha = g.render(g.op('gegl:component-extract', g.src(source.get_buffer()),
                               component='alpha', linear=True), (0, 0, rect[2], rect[3]))
-        mask = layer_mask_buffer(source)
         if mask is not None:
             source.remove_mask(Gimp.MaskApplyMode.DISCARD)
         merged = source
@@ -1708,25 +1709,36 @@ def merge_layers(image, source, layers, effect, s):
         if merged.has_alpha():
             g = Graph()
             write_layer(g, merged, straight_alpha_replace(g, merged, alpha, rect))
-        if mask is not None:
-            new_mask = merged.create_mask(Gimp.AddMaskType.WHITE)
-            merged.add_mask(new_mask)
-            mw, mh = merged.get_width(), merged.get_height()
-            g = Graph()
-            mx, my = merged.get_offsets()[1:]
-            write_layer(g, new_mask, g.region(g.src(mask, rect[0] - mx, rect[1] - my),
-                                              (0, 0, mw, mh)))
     else:
-        if source.get_mask() is not None:
-            source.remove_mask(Gimp.MaskApplyMode.APPLY)
+        # the effect reaches out of the layer: a mask in use is applied
+        # first, as in the original; one that is off is kept
+        if mask is not None:
+            source.remove_mask(Gimp.MaskApplyMode.APPLY if mask_on else
+                               Gimp.MaskApplyMode.DISCARD)
+            if mask_on:
+                mask = None
         if side == 'below':
             merged = image.merge_down(source, Gimp.MergeType.EXPAND_AS_NECESSARY)
         else:
             merged = source
             for layer in reversed(layers):
                 merged = image.merge_down(layer, Gimp.MergeType.EXPAND_AS_NECESSARY)
+    if mask is not None:
+        restore_mask(merged, mask, rect, mask_on)
     merged.set_name(name)
     return merged
+
+
+def restore_mask(layer, mask, rect, apply):
+    """Gives layer the mask (a buffer at (0, 0) of the size of rect, where
+    the layer was), white where the layer has grown."""
+    new_mask = layer.create_mask(Gimp.AddMaskType.WHITE)
+    layer.add_mask(new_mask)
+    lx, ly, lw, lh = layer_rect(layer)
+    g = Graph()
+    hidden = g.region(g.inv(g.src(mask, rect[0], rect[1])), (lx, ly, lw, lh))
+    write_layer(g, new_mask, g.inv(hidden))
+    layer.set_apply_mask(apply)
 
 
 def straight_alpha_replace(g, layer, alpha, rect):
